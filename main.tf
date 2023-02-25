@@ -13,35 +13,44 @@ provider "aws" {
 }
 
 # Create a VPC
-resource "aws_vpc" "MyLab-VPC"{
+resource "aws_vpc" "Topic4-VPC"{
     cidr_block = var.cidr_block[0]
     tags = {
-        Name = "MyLab-VPC"
+        Name = "Topic4-VPC"
     }
 }
 
-# Create Subnet (Public)
-resource "aws_subnet" "MyLab-Subnet1" {
-    vpc_id = aws_vpc.MyLab-VPC.id
+# Create Subnet (Public) for EC2 Ansible Controller
+resource "aws_subnet" "Topic4-Subnet1" {
+    vpc_id = aws_vpc.Topic4-VPC.id
     cidr_block = var.cidr_block[1]
     tags = {
-        Name = "MyLab-Subnet1"
+        Name = "Topic4-Subnet1"
+    }
+}
+
+# Create Subnet (Public) for EC2 Deploy Nginx
+resource "aws_subnet" "Topic4-Subnet2" {
+    vpc_id = aws_vpc.Topic4-VPC.id
+    cidr_block = var.cidr_block[2]
+    tags = {
+        Name = "Topic4-Subnet2"
     }
 }
 
 # Create Internet Gateway
-resource "aws_internet_gateway" "MyLab-IGW" {
-    vpc_id = aws_vpc.MyLab-VPC.id
+resource "aws_internet_gateway" "Topic4-IGW" {
+    vpc_id = aws_vpc.Topic4-VPC.id
     tags = {
-        Name = "MyLab-IGW"
+        Name = "Topic4-IGW"
     }
 }
 
 # Create Security Group
-resource "aws_security_group" "MyLab-SG" {
-    name = "MyLab-SG"
-    description = "To allow inbound and outbount traffic to MyLab"
-    vpc_id = aws_vpc.MyLab-VPC.id
+resource "aws_security_group" "Topic4-SG" {
+    name = "Topic4-SG"
+    description = "To allow inbound and outbount traffic to Topic4"
+    vpc_id = aws_vpc.Topic4-VPC.id
     dynamic ingress {
         iterator = port
         for_each = var.ports
@@ -64,20 +73,20 @@ resource "aws_security_group" "MyLab-SG" {
 }
 
 # Create route table and association
-resource "aws_route_table" "MyLab-rtb" {
-    vpc_id = aws_vpc.MyLab-VPC.id
+resource "aws_route_table" "Topic4-rtb" {
+    vpc_id = aws_vpc.Topic4-VPC.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.MyLab-IGW.id
+        gateway_id = aws_internet_gateway.Topic4-IGW.id
     }
     tags = {
-        Name = "MyLab-rtb"
+        Name = "Topic4-rtb"
     }
 }
 
-resource "aws_route_table_association" "MyLab-rtba" {
-    subnet_id = aws_subnet.MyLab-Subnet1.id
-    route_table_id = aws_route_table.MyLab-rtb.id
+resource "aws_route_table_association" "Topic4-rtba" {
+    subnet_id = aws_subnet.Topic4-Subnet1.id
+    route_table_id = aws_route_table.Topic4-rtb.id
 }
 
 # Create an AWS EC2 Instance to host Jenkins
@@ -85,8 +94,8 @@ resource "aws_instance" "Jenkins" {
   ami           = var.ami
   instance_type = var.instance_type
   key_name = "ec2"
-  vpc_security_group_ids = [aws_security_group.MyLab-SG.id]
-  subnet_id = aws_subnet.MyLab-Subnet1.id
+  vpc_security_group_ids = [aws_security_group.Topic4-SG.id]
+  subnet_id = aws_subnet.Topic4-Subnet1.id
   associate_public_ip_address = true
   user_data = file("./InstallJenkins.sh")
 
@@ -100,8 +109,8 @@ resource "aws_instance" "Ansible-Controller" {
   ami           = var.ami
   instance_type = var.instance_type
   key_name = "ec2"
-  vpc_security_group_ids = [aws_security_group.MyLab-SG.id]
-  subnet_id = aws_subnet.MyLab-Subnet1.id
+  vpc_security_group_ids = [aws_security_group.Topic4-SG.id]
+  subnet_id = aws_subnet.Topic4-Subnet1.id
   associate_public_ip_address = true
   user_data = file("./InstallAnsibleController.sh")
 
@@ -115,8 +124,8 @@ resource "aws_instance" "AnsibleMN-ApacheTomcat" {
   ami           = var.ami
   instance_type = var.instance_type
   key_name = "ec2"
-  vpc_security_group_ids = [aws_security_group.MyLab-SG.id]
-  subnet_id = aws_subnet.MyLab-Subnet1.id
+  vpc_security_group_ids = [aws_security_group.Topic4-SG.id]
+  subnet_id = aws_subnet.Topic4-Subnet1.id
   associate_public_ip_address = true
   user_data = file("./InstallDocker.sh")
 
@@ -130,8 +139,8 @@ resource "aws_instance" "AnsibleMN-DockerHost" {
   ami           = var.ami
   instance_type = var.instance_type
   key_name = "ec2"
-  vpc_security_group_ids = [aws_security_group.MyLab-SG.id]
-  subnet_id = aws_subnet.MyLab-Subnet1.id
+  vpc_security_group_ids = [aws_security_group.Topic4-SG.id]
+  subnet_id = aws_subnet.Topic4-Subnet1.id
   associate_public_ip_address = true
   user_data = file("./InstallDocker.sh")
 
